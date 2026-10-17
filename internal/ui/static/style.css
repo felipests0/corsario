@@ -31,6 +31,21 @@ header {
     justify-content: space-between;
 }
 
+.brand-header {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+#navio-logo {
+    height: 50px;
+    width: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid var(--accent-gold);
+    transition: transform 0.1s ease-out;
+}
+
 header h1 {
     color: var(--accent-gold);
     font-size: 1.75rem;
