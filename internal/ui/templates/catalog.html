@@ -13,13 +13,11 @@
         <h2>Estaleiro de Aplicações</h2>
     </div>
 
-    <div id="estaleiro-feedback"></div>
-
     <div class="catalog-grid">
         {{range $idx, $tmpl := .Templates}}
         <div class="catalog-card">
             <h3>{{$tmpl.Name}}</h3>
-            <form hx-post="/containers/create" hx-target="#estaleiro-feedback">
+            <form hx-post="/containers/create" hx-target="find button[type='submit']" hx-swap="outerHTML" hx-indicator="find button[type='submit']">
                 <div class="form-group">
                     <label>Imagem Docker e Versão (Tag)</label>
                     <div class="image-version-row">
@@ -51,7 +49,7 @@
                 </div>
                 {{end}}
 
-                <button type="submit" class="btn-gold btn-block">
+                <button type="submit" id="btn-launch-tmpl-{{$idx}}" class="btn-gold btn-block btn-launch">
                     Lançar ao Mar
                 </button>
             </form>
@@ -74,7 +72,7 @@
             <span class="badge-status">★ {{$res.StarCount}}</span>
         </div>
         <p class="hub-desc">{{$res.Description}}</p>
-        <form hx-post="/containers/create" hx-target="#estaleiro-feedback">
+        <form hx-post="/containers/create" hx-target="find button[type='submit']" hx-swap="outerHTML" hx-indicator="find button[type='submit']">
             <div class="form-group">
                 <label>Imagem Docker e Versão (Tag)</label>
                 <div class="image-version-row">
@@ -98,7 +96,7 @@
                 <input type="text" name="port" placeholder="ex: 8080:80" class="form-control">
             </div>
 
-            <button type="submit" class="btn-gold btn-block">
+            <button type="submit" id="btn-launch-hub-{{$idx}}" class="btn-gold btn-block btn-launch">
                 Lançar ao Mar
             </button>
         </form>

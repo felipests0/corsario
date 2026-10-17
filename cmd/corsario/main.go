@@ -346,9 +346,9 @@ func main() {
 
 	// Rota POST /containers/create protegida pelo middleware de autenticação
 	mux.HandleFunc("POST /containers/create", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := r.ParseForm(); err != nil {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(w, `<div class="alert-box">Dados de formulário inválidos.</div>`)
+			fmt.Fprint(w, `<button type="submit" class="btn-gold btn-block btn-launch btn-launch-error">⚠️ Falha no lançamento</button>`)
 			return
 		}
 
@@ -372,13 +372,11 @@ func main() {
 		}
 
 		if err := docker.CreateAndStartContainer(name, fullImage, port, envs); err != nil {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprintf(w, `<div class="alert-box">Erro ao lançar container: %s</div>`, html.EscapeString(err.Error()))
+			fmt.Fprintf(w, `<button type="submit" class="btn-gold btn-block btn-launch btn-launch-error" title="%s">⚠️ Falha no lançamento</button>`, html.EscapeString(err.Error()))
 			return
 		}
 
-		w.Header().Set("HX-Redirect", "/")
-		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `<div class="launch-success-box"><span>⚓ Lançamento Concluído! A embarcação está na água.</span><button type="button" class="btn-action btn-steel" hx-get="/containers" hx-target="#conteudo-principal">Ver na Frota</button></div>`)
 	}))
 
 	// Rotas de controle de ciclo de vida dos containers protegidas pelo middleware de autenticação

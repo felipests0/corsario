@@ -96,6 +96,77 @@ header h1 {
     opacity: 0.9;
 }
 
+@keyframes risingWater {
+    0% {
+        background-position: 0% 0%;
+    }
+    50% {
+        background-position: 0% 100%;
+    }
+    100% {
+        background-position: 0% 0%;
+    }
+}
+
+@keyframes pulseText {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
+}
+
+button.htmx-request,
+form.htmx-request button[type="submit"] {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+    border: 1px solid var(--accent-gold);
+    background-image: linear-gradient(to top, var(--bg-secondary) 50%, var(--accent-gold) 50%);
+    background-size: 100% 200%;
+    animation: risingWater 2.2s ease-in-out infinite;
+}
+
+button.htmx-request::after,
+form.htmx-request button[type="submit"]::after {
+    content: "A preparar as velas... (baixando imagem)";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-ivory);
+    font-size: 0.88rem;
+    font-weight: 600;
+    animation: pulseText 1.2s ease-in-out infinite;
+}
+
+.launch-success-box {
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--accent-gold);
+    border-radius: 4px;
+    color: var(--text-ivory);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    align-items: center;
+    text-align: center;
+    font-weight: 600;
+}
+
+.launch-success-box span {
+    color: var(--accent-gold);
+}
+
+.btn-launch-error {
+    background-color: var(--alert-wine) !important;
+    color: var(--text-ivory) !important;
+    border: 1px solid var(--accent-gold) !important;
+}
+
 .action-group {
     display: flex;
     flex-wrap: wrap;
