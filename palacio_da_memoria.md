@@ -36,3 +36,4 @@
 - Estaleiro de Aplicações: Catálogo de templates pré-configurados e lançamento rápido de containers via formulários dinâmicos.
 - UX: Feedback visual dinâmico (animação CSS) durante operações demoradas (como pull de imagens) usando o estado `htmx-request`.
 - UI/UX: Integração da logo do Corsário no cabeçalho com animação reativa ao scroll (navio a "navegar").
+- Neuro-UX: Fundo interativo reativo ao rato (efeito sonar no oceano) e micro-interações de flutuação nos cards para feedback visual imediato.
