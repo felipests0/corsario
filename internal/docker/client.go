@@ -18,6 +18,19 @@ type ContainerInfo struct {
 	Ports  string
 }
 
+type ContainerAPI interface {
+	ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error)
+	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
+	ContainerStop(ctx context.Context, containerID string, options container.StopOptions) error
+	ContainerRestart(ctx context.Context, containerID string, options container.StopOptions) error
+	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
+	Close() error
+}
+
+var newContainerClient = func() (ContainerAPI, error) {
+	return NewClient()
+}
+
 func NewClient() (*client.Client, error) {
 	cli, err := client.NewClientWithOpts(
 		client.WithHost("unix:///var/run/docker.sock"),
@@ -31,7 +44,7 @@ func NewClient() (*client.Client, error) {
 }
 
 func ListContainers() ([]ContainerInfo, error) {
-	cli, err := NewClient()
+	cli, err := newContainerClient()
 	if err != nil {
 		return nil, err
 	}
@@ -82,4 +95,56 @@ func ListContainers() ([]ContainerInfo, error) {
 	}
 
 	return result, nil
+}
+
+func StartContainer(id string) error {
+	cli, err := newContainerClient()
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	if err := cli.ContainerStart(context.Background(), id, container.StartOptions{}); err != nil {
+		return fmt.Errorf("erro ao iniciar container %s: %w", id, err)
+	}
+	return nil
+}
+
+func StopContainer(id string) error {
+	cli, err := newContainerClient()
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	if err := cli.ContainerStop(context.Background(), id, container.StopOptions{}); err != nil {
+		return fmt.Errorf("erro ao parar container %s: %w", id, err)
+	}
+	return nil
+}
+
+func RestartContainer(id string) error {
+	cli, err := newContainerClient()
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	if err := cli.ContainerRestart(context.Background(), id, container.StopOptions{}); err != nil {
+		return fmt.Errorf("erro ao reiniciar container %s: %w", id, err)
+	}
+	return nil
+}
+
+func RemoveContainer(id string) error {
+	cli, err := newContainerClient()
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	if err := cli.ContainerRemove(context.Background(), id, container.RemoveOptions{Force: true}); err != nil {
+		return fmt.Errorf("erro ao remover container %s: %w", id, err)
+	}
+	return nil
 }

@@ -7,7 +7,7 @@
         </button>
     </div>
 
-    <div id="tabela-containers">
+    <div id="tabela-containers" hx-get="/containers" hx-trigger="containerListChanged from:body" hx-target="#tabela-containers">
         {{template "containers_table" .}}
     </div>
 </section>
@@ -27,6 +27,7 @@
             <th>Imagem</th>
             <th>Status</th>
             <th>Portas</th>
+            <th>Ações</th>
         </tr>
     </thead>
     <tbody>
@@ -41,10 +42,26 @@
                 </span>
             </td>
             <td>{{.Ports}}</td>
+            <td>
+                <div class="action-group">
+                    <button class="btn-action btn-steel" hx-post="/containers/start/{{.ID}}" hx-swap="none">
+                        Iniciar
+                    </button>
+                    <button class="btn-action btn-steel" hx-post="/containers/stop/{{.ID}}" hx-swap="none">
+                        Parar
+                    </button>
+                    <button class="btn-action btn-restart" hx-post="/containers/restart/{{.ID}}" hx-swap="none">
+                        Reiniciar
+                    </button>
+                    <button class="btn-action btn-wine" hx-delete="/containers/remove/{{.ID}}" hx-confirm="Tem certeza que deseja afundar este container?" hx-swap="none">
+                        Apagar
+                    </button>
+                </div>
+            </td>
         </tr>
         {{else}}
         <tr>
-            <td colspan="5">Nenhum container encontrado no convés.</td>
+            <td colspan="6">Nenhum container encontrado no convés.</td>
         </tr>
         {{end}}
     </tbody>

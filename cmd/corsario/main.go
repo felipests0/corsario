@@ -73,6 +73,22 @@ func redirectToLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
+func handleContainerAction(action func(id string) error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if id == "" {
+			http.Error(w, "ID do container ausente", http.StatusBadRequest)
+			return
+		}
+		if err := action(id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("HX-Trigger", "containerListChanged")
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func main() {
 	createAdmin := flag.String("create-admin", "", "Username do administrador inicial a ser criado")
 	password := flag.String("password", "", "Senha do administrador inicial")
@@ -205,6 +221,12 @@ func main() {
 			http.Error(w, "Erro ao renderizar tabela de containers", http.StatusInternalServerError)
 		}
 	}))
+
+	// Rotas de controle de ciclo de vida dos containers protegidas pelo middleware de autenticação
+	mux.HandleFunc("POST /containers/start/{id}", authMiddleware(database, handleContainerAction(docker.StartContainer)))
+	mux.HandleFunc("POST /containers/stop/{id}", authMiddleware(database, handleContainerAction(docker.StopContainer)))
+	mux.HandleFunc("POST /containers/restart/{id}", authMiddleware(database, handleContainerAction(docker.RestartContainer)))
+	mux.HandleFunc("DELETE /containers/remove/{id}", authMiddleware(database, handleContainerAction(docker.RemoveContainer)))
 
 	// Rota /ping para HTMX
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {

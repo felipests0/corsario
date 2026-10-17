@@ -87,6 +87,43 @@ header h1 {
     opacity: 0.9;
 }
 
+.action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.btn-action {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.btn-action:hover {
+    opacity: 0.88;
+}
+
+.btn-steel {
+    background-color: var(--bg-secondary);
+    color: var(--text-ivory);
+    border: 1px solid var(--accent-gold);
+}
+
+.btn-restart {
+    background-color: var(--accent-gold);
+    color: var(--bg-primary);
+    border: 1px solid var(--accent-gold);
+}
+
+.btn-wine {
+    background-color: var(--alert-wine);
+    color: var(--text-ivory);
+    border: 1px solid var(--accent-gold);
+}
+
 .fleet-table {
     width: 100%;
     border-collapse: collapse;
