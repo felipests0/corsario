@@ -32,3 +32,4 @@
 - Ligação direta ao `/var/run/docker.sock` via Docker SDK.
 - Ações de ciclo de vida de containers operacionais (Start, Stop, Restart, Remove).
 - Visualização de logs de containers em tempo real utilizando Server-Sent Events (SSE) e HTMX.
+- Gestão do Arsenal (Listagem e exclusão forçada de imagens Docker).

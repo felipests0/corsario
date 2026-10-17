@@ -8,6 +8,8 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 type mockContainerClient struct {
@@ -20,10 +22,21 @@ type mockContainerClient struct {
 	logsOptions      container.LogsOptions
 	removedImageID   string
 	removeImageForce bool
+	pulledImage      string
+	createdName      string
+	createdConfig    *container.Config
+	createdHostCfg   *container.HostConfig
 }
 
 func (m *mockContainerClient) ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error) {
 	return nil, nil
+}
+
+func (m *mockContainerClient) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+	m.createdName = containerName
+	m.createdConfig = config
+	m.createdHostCfg = hostConfig
+	return container.CreateResponse{ID: "created-123"}, nil
 }
 
 func (m *mockContainerClient) ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error {
@@ -61,6 +74,11 @@ func (m *mockContainerClient) ImageList(ctx context.Context, options image.ListO
 			Size:     142606336,
 		},
 	}, nil
+}
+
+func (m *mockContainerClient) ImagePull(ctx context.Context, refStr string, options image.PullOptions) (io.ReadCloser, error) {
+	m.pulledImage = refStr
+	return io.NopCloser(strings.NewReader("pulling image...\n")), nil
 }
 
 func (m *mockContainerClient) ImageRemove(ctx context.Context, imageID string, options image.RemoveOptions) ([]image.DeleteResponse, error) {
@@ -165,5 +183,31 @@ func TestImageActionsWithMock(t *testing.T) {
 	}
 	if !mockCli.removeImageForce {
 		t.Error("esperava image.RemoveOptions{Force: true} em RemoveImage")
+	}
+}
+
+func TestCreateAndStartContainerWithMock(t *testing.T) {
+	mockCli := &mockContainerClient{}
+	origFactory := newContainerClient
+	newContainerClient = func() (ContainerAPI, error) {
+		return mockCli, nil
+	}
+	defer func() {
+		newContainerClient = origFactory
+	}()
+
+	envs := []string{"POSTGRES_PASSWORD=segredo"}
+	if err := CreateAndStartContainer("meu-pg", "postgres:15-alpine", "5432:5432", envs); err != nil {
+		t.Fatalf("erro inesperado em CreateAndStartContainer: %v", err)
+	}
+
+	if mockCli.pulledImage != "postgres:15-alpine" {
+		t.Errorf("esperava pull da imagem 'postgres:15-alpine', obteve '%s'", mockCli.pulledImage)
+	}
+	if mockCli.createdName != "meu-pg" {
+		t.Errorf("esperava container criado com nome 'meu-pg', obteve '%s'", mockCli.createdName)
+	}
+	if mockCli.startedID != "created-123" {
+		t.Errorf("esperava container iniciado com ID 'created-123', obteve '%s'", mockCli.startedID)
 	}
 }

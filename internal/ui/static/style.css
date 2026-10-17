@@ -189,6 +189,30 @@ header h1 {
     margin-bottom: 1rem;
 }
 
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.catalog-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--accent-gold);
+    border-radius: 6px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.catalog-card h3 {
+    color: var(--accent-gold);
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--bg-secondary);
+    padding-bottom: 0.5rem;
+}
+
 .logs-container {
     margin-top: 1.5rem;
     border: 1px solid var(--accent-gold);

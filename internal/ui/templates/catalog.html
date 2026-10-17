@@ -1,0 +1,43 @@
+<section class="dashboard">
+    <div class="dashboard-header">
+        <h2>Estaleiro de Aplicações</h2>
+    </div>
+
+    <div id="estaleiro-feedback"></div>
+
+    <div class="catalog-grid">
+        {{range .Templates}}
+        <div class="catalog-card">
+            <h3>{{.Name}}</h3>
+            <form hx-post="/containers/create" hx-target="#estaleiro-feedback">
+                <div class="form-group">
+                    <label>Imagem Docker</label>
+                    <input type="text" name="image" value="{{.Image}}" class="form-control" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Nome do Container</label>
+                    <input type="text" name="name" placeholder="ex: meu-container" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Mapeamento de Portas (Host:Container)</label>
+                    <input type="text" name="port" value="{{.DefaultPort}}" class="form-control" required>
+                </div>
+
+                {{range .RequiredEnvs}}
+                {{$key := envKey .}}
+                <div class="form-group">
+                    <label>Variável: {{$key}}</label>
+                    <input type="text" name="env_{{$key}}" placeholder="Valor para {{$key}}" class="form-control" required>
+                </div>
+                {{end}}
+
+                <button type="submit" class="btn-gold btn-block">
+                    Lançar ao Mar
+                </button>
+            </form>
+        </div>
+        {{end}}
+    </div>
+</section>

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"corsario/internal/auth"
+	"corsario/internal/catalog"
 	"corsario/internal/db"
 	"corsario/internal/docker"
 	"corsario/internal/ui"
@@ -38,6 +39,10 @@ type DashboardData struct {
 type ImagesData struct {
 	Images []image.Summary
 	Error  string
+}
+
+type CatalogData struct {
+	Templates []catalog.AppTemplate
 }
 
 type LoginData struct {
@@ -158,6 +163,9 @@ func main() {
 			}
 			return strings.Join(tags, ", ")
 		},
+		"envKey": func(env string) string {
+			return strings.TrimSuffix(env, "=")
+		},
 	}
 
 	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
@@ -270,6 +278,47 @@ func main() {
 		if err := tmpl.ExecuteTemplate(w, templateName, data); err != nil {
 			http.Error(w, "Erro ao renderizar tabela de containers", http.StatusInternalServerError)
 		}
+	}))
+
+	// Rota GET /catalog protegida pelo middleware de autenticação
+	mux.HandleFunc("GET /catalog", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		data := CatalogData{
+			Templates: catalog.GetTemplates(),
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.ExecuteTemplate(w, "catalog.html", data); err != nil {
+			http.Error(w, "Erro ao renderizar estaleiro", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota POST /containers/create protegida pelo middleware de autenticação
+	mux.HandleFunc("POST /containers/create", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprint(w, `<div class="alert-box">Dados de formulário inválidos.</div>`)
+			return
+		}
+
+		name := r.FormValue("name")
+		img := r.FormValue("image")
+		port := r.FormValue("port")
+
+		var envs []string
+		for k, vals := range r.PostForm {
+			if strings.HasPrefix(k, "env_") && len(vals) > 0 {
+				envName := strings.TrimPrefix(k, "env_")
+				envs = append(envs, fmt.Sprintf("%s=%s", envName, vals[0]))
+			}
+		}
+
+		if err := docker.CreateAndStartContainer(name, img, port, envs); err != nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprintf(w, `<div class="alert-box">Erro ao lançar container: %s</div>`, html.EscapeString(err.Error()))
+			return
+		}
+
+		w.Header().Set("HX-Redirect", "/")
+		w.WriteHeader(http.StatusOK)
 	}))
 
 	// Rotas de controle de ciclo de vida dos containers protegidas pelo middleware de autenticação

@@ -8,7 +8,10 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 type ContainerInfo struct {
@@ -22,12 +25,14 @@ type ContainerInfo struct {
 
 type ContainerAPI interface {
 	ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error)
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
 	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
 	ContainerStop(ctx context.Context, containerID string, options container.StopOptions) error
 	ContainerRestart(ctx context.Context, containerID string, options container.StopOptions) error
 	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
 	ContainerLogs(ctx context.Context, container string, options container.LogsOptions) (io.ReadCloser, error)
 	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
+	ImagePull(ctx context.Context, refStr string, options image.PullOptions) (io.ReadCloser, error)
 	ImageRemove(ctx context.Context, imageID string, options image.RemoveOptions) ([]image.DeleteResponse, error)
 	Close() error
 }
@@ -227,5 +232,70 @@ func RemoveImage(id string) error {
 	if _, err := cli.ImageRemove(context.Background(), id, image.RemoveOptions{Force: true, PruneChildren: true}); err != nil {
 		return fmt.Errorf("erro ao remover imagem %s: %w", id, err)
 	}
+	return nil
+}
+
+func CreateAndStartContainer(name, imageName, portMapping string, envs []string) error {
+	cli, err := newContainerClient()
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	ctx := context.Background()
+
+	pullReader, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
+	if err != nil {
+		return fmt.Errorf("erro ao puxar imagem %s: %w", imageName, err)
+	}
+	_, _ = io.Copy(io.Discard, pullReader)
+	_ = pullReader.Close()
+
+	exposedPorts := nat.PortSet{}
+	portBindings := nat.PortMap{}
+
+	if strings.TrimSpace(portMapping) != "" {
+		parts := strings.Split(strings.TrimSpace(portMapping), ":")
+		var hostPort, containerPort string
+		if len(parts) == 2 {
+			hostPort = strings.TrimSpace(parts[0])
+			containerPort = strings.TrimSpace(parts[1])
+		} else {
+			hostPort = strings.TrimSpace(parts[0])
+			containerPort = strings.TrimSpace(parts[0])
+		}
+		if !strings.Contains(containerPort, "/") {
+			containerPort += "/tcp"
+		}
+		p := nat.Port(containerPort)
+		exposedPorts[p] = struct{}{}
+		portBindings[p] = []nat.PortBinding{
+			{
+				HostIP:   "0.0.0.0",
+				HostPort: hostPort,
+			},
+		}
+	}
+
+	config := &container.Config{
+		Image:        imageName,
+		Env:          envs,
+		ExposedPorts: exposedPorts,
+		Tty:          true,
+	}
+
+	hostConfig := &container.HostConfig{
+		PortBindings: portBindings,
+	}
+
+	resp, err := cli.ContainerCreate(ctx, config, hostConfig, nil, nil, strings.TrimSpace(name))
+	if err != nil {
+		return fmt.Errorf("erro ao criar container %s: %w", name, err)
+	}
+
+	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+		return fmt.Errorf("erro ao iniciar container %s: %w", resp.ID, err)
+	}
+
 	return nil
 }
