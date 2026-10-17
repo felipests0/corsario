@@ -6,6 +6,32 @@
     <title>Corsário</title>
     <link rel="icon" type="image/jpeg" href="/static/img/logocorsario.jpeg">
     <link rel="stylesheet" href="/static/style.css">
+    <script>
+        (function () {
+            function normalizeNumericIdSelector(sel) {
+                if (typeof sel === "string" && /^#[0-9]/.test(sel)) {
+                    return '[id="' + sel.slice(1).replace(/"/g, '\\"') + '"]';
+                }
+                return sel;
+            }
+            const origDocQS = Document.prototype.querySelector;
+            const origDocQSA = Document.prototype.querySelectorAll;
+            const origEltQS = Element.prototype.querySelector;
+            const origEltQSA = Element.prototype.querySelectorAll;
+            Document.prototype.querySelector = function (sel) {
+                return origDocQS.call(this, normalizeNumericIdSelector(sel));
+            };
+            Document.prototype.querySelectorAll = function (sel) {
+                return origDocQSA.call(this, normalizeNumericIdSelector(sel));
+            };
+            Element.prototype.querySelector = function (sel) {
+                return origEltQS.call(this, normalizeNumericIdSelector(sel));
+            };
+            Element.prototype.querySelectorAll = function (sel) {
+                return origEltQSA.call(this, normalizeNumericIdSelector(sel));
+            };
+        })();
+    </script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
 </head>

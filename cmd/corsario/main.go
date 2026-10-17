@@ -480,14 +480,23 @@ func main() {
 			return
 		}
 
+		escapedSecret := html.EscapeString(secret)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		data := TOTPSetupData{
-			Secret: secret,
-			QRCode: template.URL(qrBase64),
-		}
-		if err := tmpl.ExecuteTemplate(w, "totp_setup", data); err != nil {
-			http.Error(w, "Erro ao renderizar configuração 2FA", http.StatusInternalServerError)
-		}
+		fmt.Fprintf(w, `<div class="totp-setup-box">
+	<p class="hub-desc">1. Escaneie o QR Code abaixo na sua aplicação autenticadora ou insira a chave secreta manualmente:</p>
+	<div class="qr-wrapper">
+		<img src="%s" alt="QR Code 2FA" class="qr-code-img">
+	</div>
+	<p class="hub-desc">Chave Secreta: <code>%s</code></p>
+	<form hx-post="/profile/2fa/enable" hx-target="#2fa-setup" hx-swap="innerHTML">
+		<input type="hidden" name="secret" value="%s">
+		<div class="form-group">
+			<label for="totp-verify-token">2. Digite o código temporário de 6 dígitos para confirmar:</label>
+			<input type="text" id="totp-verify-token" name="token" class="form-control" placeholder="000000" autocomplete="off" required>
+		</div>
+		<button type="submit" class="btn-gold btn-block">Confirmar e Ativar 2FA</button>
+	</form>
+</div>`, qrBase64, escapedSecret, escapedSecret)
 	}))
 
 	// Rota POST /profile/2fa/enable protegida pelo middleware de autenticação

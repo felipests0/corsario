@@ -15,37 +15,9 @@
         </div>
         {{end}}
 
-        <button type="button" class="btn-gold" hx-post="/profile/2fa/generate" hx-target="#2fa-setup">
+        <button type="button" class="btn-gold" hx-post="/profile/2fa/generate" hx-target="#2fa-setup" hx-swap="innerHTML">
             Ativar 2FA
         </button>
-
-        <div id="2fa-setup" style="margin-top: 1.5rem;"></div>
+        <div id="2fa-setup" style="margin-top: 20px;"></div>
     </div>
 </section>
-
-{{define "totp_setup"}}
-<div class="totp-setup-box">
-    {{if .Error}}
-    <div class="alert-box">
-        <p>{{.Error}}</p>
-    </div>
-    {{end}}
-
-    <p class="hub-desc">1. Escaneie o QR Code abaixo na sua aplicação autenticadora ou insira o segredo manualmente:</p>
-    <div class="qr-wrapper">
-        <img src="{{.QRCode}}" alt="QR Code 2FA" class="qr-code-img">
-    </div>
-    <p class="hub-desc">Segredo TOTP: <code>{{.Secret}}</code></p>
-
-    <form hx-post="/profile/2fa/enable" hx-target="#2fa-setup">
-        <input type="hidden" name="secret" value="{{.Secret}}">
-        <div class="form-group">
-            <label for="totp-verify-token">2. Digite o código de 6 dígitos gerado para confirmar:</label>
-            <input type="text" id="totp-verify-token" name="token" class="form-control" placeholder="000000" autocomplete="off" required>
-        </div>
-        <button type="submit" class="btn-gold btn-block">
-            Confirmar e Ativar 2FA
-        </button>
-    </form>
-</div>
-{{end}}
