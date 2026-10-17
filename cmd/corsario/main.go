@@ -7,7 +7,10 @@ import (
 	"log"
 	"net/http"
 
+	"corsario/internal/db"
 	"corsario/internal/ui"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -16,6 +19,12 @@ var (
 )
 
 func main() {
+	database, err := db.InitDB("corsario.db")
+	if err != nil {
+		log.Fatalf("Erro ao inicializar banco de dados: %v", err)
+	}
+	defer database.Close()
+
 	tmpl, err := template.ParseFS(templatesFS, "templates/base.html")
 	if err != nil {
 		log.Fatalf("Erro ao carregar templates: %v", err)
