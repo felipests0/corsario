@@ -39,3 +39,4 @@
 - Neuro-UX: Fundo interativo reativo ao rato (efeito sonar no oceano) e micro-interações de flutuação nos cards para feedback visual imediato.
 - UI/UX: Logo fixada à esquerda do título e adição de feixes de luz animados no background para maior profundidade.
 - UI/UX: Configuração do favicon da aplicação utilizando a logo do navio.
+- Gestão de Tripulação (CRUD de utilizadores locais no SQLite integrado na interface via HTMX).

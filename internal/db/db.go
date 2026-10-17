@@ -83,6 +83,51 @@ func CreateAdminUser(conn *sql.DB, username, passwordHash string) error {
 	return nil
 }
 
+func ListUsers() ([]User, error) {
+	rows, err := DB.Query(`SELECT id, username, realm FROM users ORDER BY id ASC;`)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar utilizadores: %w", err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Username, &u.Realm); err != nil {
+			return nil, fmt.Errorf("erro ao ler utilizador: %w", err)
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}
+
+func CreateUser(username, passwordHash, realm string) error {
+	if realm == "" {
+		realm = "interno"
+	}
+	query := `INSERT INTO users (username, password_hash, realm, totp_secret) VALUES (?, ?, ?, '');`
+	if _, err := DB.Exec(query, username, passwordHash, realm); err != nil {
+		return fmt.Errorf("erro ao criar utilizador: %w", err)
+	}
+	return nil
+}
+
+func DeleteUser(id int) error {
+	_, _ = DB.Exec(`DELETE FROM sessions WHERE user_id = ?;`, id)
+	if _, err := DB.Exec(`DELETE FROM users WHERE id = ?;`, id); err != nil {
+		return fmt.Errorf("erro ao remover utilizador: %w", err)
+	}
+	return nil
+}
+
+func CountUsers() (int, error) {
+	var count int
+	if err := DB.QueryRow(`SELECT COUNT(*) FROM users;`).Scan(&count); err != nil {
+		return 0, fmt.Errorf("erro ao contar utilizadores: %w", err)
+	}
+	return count, nil
+}
+
 func GetUserByUsernameAndRealm(conn *sql.DB, username, realm string) (*User, error) {
 	var u User
 	query := `SELECT id, username, password_hash, realm, COALESCE(totp_secret, '') FROM users WHERE username = ? AND realm = ?;`

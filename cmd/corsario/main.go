@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,6 +51,11 @@ type HubSearchData struct {
 	Error   string
 }
 
+type UsersData struct {
+	Users []db.User
+	Error string
+}
+
 type LoginData struct {
 	Error string
 }
@@ -79,6 +85,19 @@ func loadImagesData() ImagesData {
 	}
 	return ImagesData{
 		Images: images,
+	}
+}
+
+func loadUsersData(errMsg string) UsersData {
+	users, err := db.ListUsers()
+	if err != nil {
+		return UsersData{
+			Error: fmt.Sprintf("Erro ao listar tripulação: %v", err),
+		}
+	}
+	return UsersData{
+		Users: users,
+		Error: errMsg,
 	}
 }
 
@@ -309,6 +328,85 @@ func main() {
 		if err := tmpl.ExecuteTemplate(w, "catalog.html", data); err != nil {
 			http.Error(w, "Erro ao renderizar estaleiro", http.StatusInternalServerError)
 		}
+	}))
+
+	// Rota GET /users protegida pelo middleware de autenticação
+	mux.HandleFunc("GET /users", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		data := loadUsersData("")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.ExecuteTemplate(w, "users.html", data); err != nil {
+			http.Error(w, "Erro ao renderizar página da tripulação", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota POST /users protegida pelo middleware de autenticação
+	mux.HandleFunc("POST /users", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := r.ParseForm(); err != nil {
+			data := loadUsersData("Dados de formulário inválidos.")
+			_ = tmpl.ExecuteTemplate(w, "users.html", data)
+			return
+		}
+
+		username := strings.TrimSpace(r.FormValue("username"))
+		pass := r.FormValue("password")
+		realm := strings.TrimSpace(r.FormValue("realm"))
+		if realm == "" {
+			realm = "interno"
+		}
+
+		if username == "" || pass == "" {
+			data := loadUsersData("Username e senha são obrigatórios.")
+			_ = tmpl.ExecuteTemplate(w, "users.html", data)
+			return
+		}
+
+		hash, err := auth.HashPassword(pass)
+		if err != nil {
+			data := loadUsersData(fmt.Sprintf("Erro ao processar senha: %v", err))
+			_ = tmpl.ExecuteTemplate(w, "users.html", data)
+			return
+		}
+
+		if err := db.CreateUser(username, hash, realm); err != nil {
+			data := loadUsersData(fmt.Sprintf("Erro ao alistar marujo: %v", err))
+			_ = tmpl.ExecuteTemplate(w, "users.html", data)
+			return
+		}
+
+		w.Header().Set("HX-Trigger", "userListChanged")
+		data := loadUsersData("")
+		if err := tmpl.ExecuteTemplate(w, "users.html", data); err != nil {
+			http.Error(w, "Erro ao renderizar tripulação", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota DELETE /users/{id} protegida pelo middleware de autenticação
+	mux.HandleFunc("DELETE /users/{id}", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil || id <= 0 {
+			http.Error(w, "ID de utilizador inválido", http.StatusBadRequest)
+			return
+		}
+
+		count, err := db.CountUsers()
+		if err != nil {
+			http.Error(w, "Erro ao verificar tripulação", http.StatusInternalServerError)
+			return
+		}
+		if count <= 1 {
+			http.Error(w, "Não é permitido expulsar o último administrador do navio!", http.StatusBadRequest)
+			return
+		}
+
+		if err := db.DeleteUser(id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("HX-Trigger", "userListChanged")
+		w.WriteHeader(http.StatusOK)
 	}))
 
 	// Rota GET /hub/search protegida pelo middleware de autenticação

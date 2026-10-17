@@ -1,0 +1,71 @@
+<section class="dashboard">
+    <div class="hub-search-section">
+        <div class="dashboard-header">
+            <h2>Alistar Novo Marujo</h2>
+        </div>
+
+        {{if .Error}}
+        <div class="alert-box">
+            <p>{{.Error}}</p>
+        </div>
+        {{end}}
+
+        <form hx-post="/users" hx-target="#conteudo-principal">
+            <div class="catalog-grid">
+                <div class="form-group">
+                    <label for="new-username">Username</label>
+                    <input type="text" id="new-username" name="username" class="form-control" placeholder="ex: imediato" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Senha</label>
+                    <input type="password" id="new-password" name="password" class="form-control" placeholder="Senha de acesso" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-realm">Realm</label>
+                    <select id="new-realm" name="realm" class="form-control">
+                        <option value="interno">interno</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn-gold">
+                Alistar Marujo
+            </button>
+        </form>
+    </div>
+
+    <div class="dashboard-header">
+        <h2>Tripulação a Bordo</h2>
+        <button type="button" class="btn-gold" hx-get="/users" hx-target="#conteudo-principal">
+            Atualizar
+        </button>
+    </div>
+
+    <table class="fleet-table" hx-get="/users" hx-trigger="userListChanged from:body" hx-target="#conteudo-principal">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Realm</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Users}}
+            <tr>
+                <td><code>{{.ID}}</code></td>
+                <td>{{.Username}}</td>
+                <td><span class="badge-status">{{.Realm}}</span></td>
+                <td>
+                    <button type="button" class="btn-action btn-wine" hx-delete="/users/{{.ID}}" hx-confirm="Tem a certeza que deseja atirar este marujo ao mar?" hx-swap="none">
+                        Expulsar
+                    </button>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="4">Nenhum marujo alistado a bordo.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</section>

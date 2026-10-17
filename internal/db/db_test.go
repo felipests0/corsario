@@ -32,6 +32,32 @@ func TestInitDB(t *testing.T) {
 		t.Fatalf("erro ao buscar usuário admin: %v", err)
 	}
 
+	if err := CreateUser("marujo1", "hash456", "interno"); err != nil {
+		t.Fatalf("erro ao criar novo utilizador: %v", err)
+	}
+
+	count, err := CountUsers()
+	if err != nil || count != 2 {
+		t.Fatalf("esperava 2 utilizadores, obteve count=%d err=%v", count, err)
+	}
+
+	users, err := ListUsers()
+	if err != nil || len(users) != 2 {
+		t.Fatalf("esperava listar 2 utilizadores, obteve len=%d err=%v", len(users), err)
+	}
+	if users[0].PasswordHash != "" {
+		t.Error("ListUsers não deve devolver o hash de senha")
+	}
+
+	if err := DeleteUser(users[1].ID); err != nil {
+		t.Fatalf("erro ao remover utilizador: %v", err)
+	}
+
+	countAfter, _ := CountUsers()
+	if countAfter != 1 {
+		t.Errorf("esperava 1 utilizador após exclusão, obteve %d", countAfter)
+	}
+
 	expires := time.Now().UTC().Add(1 * time.Hour)
 	if err := CreateSession(conn, "tok-valido", u.ID, expires); err != nil {
 		t.Fatalf("erro ao criar sessão: %v", err)
