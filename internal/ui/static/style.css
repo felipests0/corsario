@@ -23,8 +23,12 @@ body {
 }
 
 header {
-    background-color: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: var(--bg-primary);
     border-bottom: 2px solid var(--accent-gold);
+    box-shadow: 0 2px 10px rgba(196, 154, 69, 0.2);
     padding: 1rem 2rem;
     display: flex;
     align-items: center;
