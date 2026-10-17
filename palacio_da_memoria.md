@@ -43,3 +43,4 @@
 - Segurança: Implementação de 2FA (TOTP) utilizando o pacote `pquerna/otp` com validação no login e geração de QR Code na área de perfil do utilizador.
 - Distribuição: Configuração de empacotamento `.deb` via nFPM e daemonização via `systemd` com políticas de segurança restritas.
 - Código Aberto: Estruturação para publicação no GitHub utilizando script de instalação universal (`install.sh`) e documentação detalhada.
+- Documentação: `README.md` adaptado para PT-BR e enriquecido com galeria de capturas de tela da interface.
