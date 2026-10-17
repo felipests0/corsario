@@ -34,6 +34,39 @@ body::before {
     background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(36, 52, 71, 0.4), transparent 40%);
 }
 
+#ocean-lights {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -2; /* Fica atrás do efeito sonar e do conteúdo */
+    overflow: hidden;
+}
+
+.light-streak {
+    position: absolute;
+    width: 40vw;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(196, 154, 69, 0.15), transparent);
+    box-shadow: 0 0 15px rgba(196, 154, 69, 0.1);
+    opacity: 0;
+    border-radius: 50%;
+}
+
+/* Posições e Tempos variados para parecer orgânico */
+.streak-1 { top: 20%; left: -50%; animation: streak-move 12s infinite linear; }
+.streak-2 { top: 60%; left: -50%; animation: streak-move 18s infinite linear 5s; }
+.streak-3 { top: 85%; left: -50%; animation: streak-move 15s infinite linear 10s; }
+
+@keyframes streak-move {
+    0% { transform: rotate(-15deg) translateX(-20vw); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: rotate(-15deg) translateX(150vw); opacity: 0; }
+}
+
 header {
     position: sticky;
     top: 0;
@@ -44,13 +77,13 @@ header {
     padding: 1rem 2rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 15px;
 }
 
 .brand-header {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
+    gap: 15px;
 }
 
 #navio-logo {
@@ -71,6 +104,7 @@ header h1 {
 .nav-tabs {
     display: flex;
     gap: 0.75rem;
+    margin-left: auto;
 }
 
 .nav-tab {

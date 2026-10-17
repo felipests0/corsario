@@ -9,11 +9,14 @@
     <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
 </head>
 <body>
+    <div id="ocean-lights">
+        <div class="light-streak streak-1"></div>
+        <div class="light-streak streak-2"></div>
+        <div class="light-streak streak-3"></div>
+    </div>
     <header>
-        <div class="brand-header">
-            <img src="/static/img/logocorsario.jpeg" id="navio-logo" alt="Corsário Logo">
-            <h1>Corsário</h1>
-        </div>
+        <img src="/static/img/logocorsario.jpeg" id="navio-logo" alt="Corsário Logo">
+        <h1>Corsário</h1>
         <nav class="nav-tabs">
             <button type="button" class="nav-tab" hx-get="/containers" hx-target="#conteudo-principal">
                 Frota
