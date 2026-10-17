@@ -40,12 +40,12 @@
 
 ---
 
-## ⚡ Quick Start (Instalação Rápida)
+## ⚡ Início Rápido (Instalação Rápida)
 
 Em qualquer servidor Linux com Docker e `systemd`, execute o comando de linha única abaixo como `root` (ou via `sudo`):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/corsario/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/felipests0/corsario/main/install.sh | sudo bash
 ```
 
 Após a instalação, crie o seu primeiro usuário Capitão (administrador):
@@ -69,7 +69,7 @@ Em seguida, acesse o painel no navegador através da porta `9443`:
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/SEU_USUARIO/corsario.git
+git clone https://github.com/felipests0/corsario.git
 cd corsario
 
 # 2. Baixe as dependências e compile o arquivo binário único

@@ -44,3 +44,4 @@
 - Distribuição: Configuração de empacotamento `.deb` via nFPM e daemonização via `systemd` com políticas de segurança restritas.
 - Código Aberto: Estruturação para publicação no GitHub utilizando script de instalação universal (`install.sh`) e documentação detalhada.
 - Documentação: `README.md` adaptado para PT-BR e enriquecido com galeria de capturas de tela da interface.
+- Lançamento: Ajuste dos links de distribuição para o repositório oficial (`felipests0`).

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BINARY_URL="https://github.com/SEU_USUARIO/corsario/releases/latest/download/corsario_linux_amd64"
+BINARY_URL="https://github.com/felipests0/corsario/releases/latest/download/corsario_linux_amd64"
 INSTALL_PATH="/usr/local/bin/corsario"
 DATA_DIR="/var/lib/corsario"
 SERVICE_FILE="/etc/systemd/system/corsario.service"
