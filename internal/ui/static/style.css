@@ -137,7 +137,63 @@ header h1 {
 .alert-box {
     background-color: var(--alert-wine);
     color: var(--text-ivory);
-    padding: 1rem;
+    padding: 0.85rem 1rem;
     border-radius: 4px;
     border: 1px solid var(--accent-gold);
+    margin-bottom: 1rem;
+}
+
+.login-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    padding: 1.5rem;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--accent-gold);
+    border-radius: 6px;
+    padding: 2rem;
+}
+
+.login-card h2 {
+    color: var(--accent-gold);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.15rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-ivory);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    background-color: var(--bg-primary);
+    color: var(--text-ivory);
+    border: 1px solid var(--accent-gold);
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.form-control:focus {
+    outline: 2px solid var(--accent-gold);
+}
+
+.btn-block {
+    width: 100%;
+    margin-top: 0.5rem;
 }

@@ -3,11 +3,20 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
+
+type User struct {
+	ID           int
+	Username     string
+	PasswordHash string
+	Realm        string
+	TOTPSecret   string
+}
 
 func InitDB(filepath string) (*sql.DB, error) {
 	conn, err := sql.Open("sqlite3", filepath)
@@ -44,6 +53,69 @@ func InitDB(filepath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("erro ao criar tabela users: %w", err)
 	}
 
+	createSessionsTable := `
+	CREATE TABLE IF NOT EXISTS sessions (
+		token TEXT PRIMARY KEY,
+		user_id INTEGER,
+		expires_at DATETIME
+	);`
+
+	if _, err := conn.Exec(createSessionsTable); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("erro ao criar tabela sessions: %w", err)
+	}
+
 	DB = conn
 	return conn, nil
+}
+
+func CreateAdminUser(conn *sql.DB, username, passwordHash string) error {
+	query := `
+	INSERT INTO users (username, password_hash, realm, totp_secret)
+	VALUES (?, ?, 'interno', '')
+	ON CONFLICT(username) DO UPDATE SET
+		password_hash = excluded.password_hash,
+		realm = 'interno';`
+	_, err := conn.Exec(query, username, passwordHash)
+	if err != nil {
+		return fmt.Errorf("erro ao criar usuário admin: %w", err)
+	}
+	return nil
+}
+
+func GetUserByUsernameAndRealm(conn *sql.DB, username, realm string) (*User, error) {
+	var u User
+	query := `SELECT id, username, password_hash, realm, COALESCE(totp_secret, '') FROM users WHERE username = ? AND realm = ?;`
+	err := conn.QueryRow(query, username, realm).Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Realm, &u.TOTPSecret)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func CreateSession(conn *sql.DB, token string, userID int, expiresAt time.Time) error {
+	query := `INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?);`
+	_, err := conn.Exec(query, token, userID, expiresAt.UTC())
+	if err != nil {
+		return fmt.Errorf("erro ao salvar sessão: %w", err)
+	}
+	return nil
+}
+
+func ValidateSession(conn *sql.DB, token string) (int, bool) {
+	if token == "" {
+		return 0, false
+	}
+	var userID int
+	var expiresAt time.Time
+	query := `SELECT user_id, expires_at FROM sessions WHERE token = ?;`
+	err := conn.QueryRow(query, token).Scan(&userID, &expiresAt)
+	if err != nil {
+		return 0, false
+	}
+	if time.Now().UTC().After(expiresAt.UTC()) {
+		_, _ = conn.Exec(`DELETE FROM sessions WHERE token = ?;`, token)
+		return 0, false
+	}
+	return userID, true
 }

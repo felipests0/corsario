@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corsário - Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <header>
+        <h1>Corsário</h1>
+    </header>
+    <main class="login-wrapper">
+        <div class="login-card">
+            <h2>Ponte de Comando</h2>
+            {{if .Error}}
+            <div class="alert-box" role="alert">
+                {{.Error}}
+            </div>
+            {{end}}
+            <form hx-post="/login" hx-target="body">
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" name="username" class="form-control" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="realm">Realm de Autenticação</label>
+                    <select id="realm" name="realm" class="form-control">
+                        <option value="interno">Interno</option>
+                        <option value="pam">Linux PAM</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-gold btn-block">Embarcar</button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
