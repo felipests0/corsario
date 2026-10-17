@@ -18,3 +18,7 @@
 - **Autenticação:** Dual-Realm (Linux PAM via SO ou Interno no SQLite) + TOTP (2FA).
 - **Integração Docker:** Acesso direto ao socket (`/var/run/docker.sock`) usando o SDK oficial do Go (`moby/moby/client`).
 - **Deploy (Futuro):** Empacotamento `.deb` usando nFPM, rodando como serviço systemd autônomo com geração automática de certificado TLS.
+
+## 3. Qualidade e Testes
+- **Testes Unitários:** Todas as regras de negócio do backend, manipulação de banco de dados e integrações (como o Docker SDK) devem ser cobertas por testes unitários usando o pacote nativo `testing` do Go.
+- **Banco de Dados em Testes:** Testes que envolvem o SQLite devem utilizar bancos em memória (`file::memory:?cache=shared`) para não poluir o banco de desenvolvimento.
