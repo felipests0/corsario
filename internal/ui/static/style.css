@@ -117,8 +117,8 @@ header h1 {
     }
 }
 
-button.htmx-request,
-form.htmx-request button[type="submit"] {
+button.btn-launch.htmx-request,
+form.htmx-request button.btn-launch {
     position: relative;
     color: transparent !important;
     pointer-events: none;
@@ -128,8 +128,8 @@ form.htmx-request button[type="submit"] {
     animation: risingWater 2.2s ease-in-out infinite;
 }
 
-button.htmx-request::after,
-form.htmx-request button[type="submit"]::after {
+button.btn-launch.htmx-request::after,
+form.htmx-request button.btn-launch::after {
     content: "A preparar as velas... (baixando imagem)";
     position: absolute;
     inset: 0;

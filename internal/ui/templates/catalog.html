@@ -17,7 +17,7 @@
         {{range $idx, $tmpl := .Templates}}
         <div class="catalog-card">
             <h3>{{$tmpl.Name}}</h3>
-            <form hx-post="/containers/create" hx-target="find button[type='submit']" hx-swap="outerHTML" hx-indicator="find button[type='submit']">
+            <form hx-post="/containers/create" hx-target="find button[type='submit']" hx-swap="outerHTML" hx-indicator="find button[type='submit']" hx-disinherit="*">
                 <div class="form-group">
                     <label>Imagem Docker e Versão (Tag)</label>
                     <div class="image-version-row">
@@ -26,7 +26,7 @@
                             <option value="{{defaultTag $tmpl.Image}}">{{defaultTag $tmpl.Image}}</option>
                         </select>
                     </div>
-                    <button type="button" class="btn-action btn-steel btn-load-tags" hx-get="/hub/tags?image={{baseImage $tmpl.Image}}" hx-target="#tmpl-tags-{{$idx}}" hx-swap="innerHTML">
+                    <button type="button" class="btn-action btn-steel btn-load-tags" hx-get="/hub/tags?image={{baseImage $tmpl.Image}}" hx-target="#tmpl-tags-{{$idx}}" hx-swap="innerHTML" hx-params="none">
                         Carregar Versões
                     </button>
                 </div>
@@ -72,7 +72,7 @@
             <span class="badge-status">★ {{$res.StarCount}}</span>
         </div>
         <p class="hub-desc">{{$res.Description}}</p>
-        <form hx-post="/containers/create" hx-target="find button[type='submit']" hx-swap="outerHTML" hx-indicator="find button[type='submit']">
+        <form hx-post="/containers/create" hx-target="find button[type='submit']" hx-swap="outerHTML" hx-indicator="find button[type='submit']" hx-disinherit="*">
             <div class="form-group">
                 <label>Imagem Docker e Versão (Tag)</label>
                 <div class="image-version-row">
@@ -81,7 +81,7 @@
                         <option value="latest">latest</option>
                     </select>
                 </div>
-                <button type="button" class="btn-action btn-steel btn-load-tags" hx-get="/hub/tags?image={{$res.Name}}" hx-target="#hub-tags-{{$idx}}" hx-swap="innerHTML">
+                <button type="button" class="btn-action btn-steel btn-load-tags" hx-get="/hub/tags?image={{$res.Name}}" hx-target="#hub-tags-{{$idx}}" hx-swap="innerHTML" hx-params="none">
                     Carregar Versões
                 </button>
             </div>

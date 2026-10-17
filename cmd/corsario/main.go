@@ -376,7 +376,7 @@ func main() {
 			return
 		}
 
-		fmt.Fprint(w, `<div class="launch-success-box"><span>⚓ Lançamento Concluído! A embarcação está na água.</span><button type="button" class="btn-action btn-steel" hx-get="/containers" hx-target="#conteudo-principal">Ver na Frota</button></div>`)
+		fmt.Fprint(w, `<div class="launch-success-box"><span>⚓ Lançamento Concluído! A embarcação está na água.</span><button type="button" class="btn-action btn-steel" hx-get="/containers" hx-target="#conteudo-principal" hx-swap="innerHTML" hx-params="none">Ver na Frota</button></div>`)
 	}))
 
 	// Rotas de controle de ciclo de vida dos containers protegidas pelo middleware de autenticação
