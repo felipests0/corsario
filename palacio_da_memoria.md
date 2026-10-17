@@ -42,3 +42,4 @@
 - Gestão de Tripulação (CRUD de utilizadores locais no SQLite integrado na interface via HTMX).
 - Segurança: Implementação de 2FA (TOTP) utilizando o pacote `pquerna/otp` com validação no login e geração de QR Code na área de perfil do utilizador.
 - Distribuição: Configuração de empacotamento `.deb` via nFPM e daemonização via `systemd` com políticas de segurança restritas.
+- Código Aberto: Estruturação para publicação no GitHub utilizando script de instalação universal (`install.sh`) e documentação detalhada.
