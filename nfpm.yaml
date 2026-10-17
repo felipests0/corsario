@@ -1,0 +1,25 @@
+name: "corsario"
+arch: "amd64"
+platform: "linux"
+version: "1.0.0"
+section: "admin"
+priority: "optional"
+maintainer: "Capitão <admin@corsario.local>"
+description: "Painel web ultraleve para gestão de containers Docker."
+vendor: "Corsario"
+homepage: "https://github.com/seu-usuario/corsario"
+license: "MIT"
+depends:
+  - docker-ce | docker.io
+scripts:
+  postinstall: ./build/package/postinst
+contents:
+  - src: ./corsario
+    dst: /usr/bin/corsario
+    file_info:
+      mode: 0755
+  - src: ./build/package/corsario.service
+    dst: /lib/systemd/system/corsario.service
+  - src: ./build/package/postinst
+    dst: /var/lib/dpkg/info/corsario.postinst
+    type: script

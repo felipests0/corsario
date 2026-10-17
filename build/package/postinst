@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+# Cria a pasta de dados onde ficará o SQLite e os certificados
+mkdir -p /var/lib/corsario
+chmod 700 /var/lib/corsario
+
+# Recarrega o systemd e habilita o serviço no boot
+systemctl daemon-reload
+systemctl enable corsario.service
+systemctl start corsario.service
+
+echo "[OK] O navio Corsário ancorou com sucesso!"
+echo "Acesse https://<IP-DO-SERVIDOR>:9443"
+exit 0
