@@ -32,6 +32,15 @@ func TestInitDB(t *testing.T) {
 		t.Fatalf("erro ao buscar usuário admin: %v", err)
 	}
 
+	if err := UpdateUserTOTPSecret(u.ID, "SEGREDO2FA"); err != nil {
+		t.Fatalf("erro ao atualizar segredo TOTP: %v", err)
+	}
+
+	uAfter, err := GetUserByUsernameAndRealm(conn, "capitao", "interno")
+	if err != nil || uAfter.TOTPSecret != "SEGREDO2FA" {
+		t.Errorf("esperava TOTPSecret 'SEGREDO2FA', obteve '%s'", uAfter.TOTPSecret)
+	}
+
 	if err := CreateUser("marujo1", "hash456", "interno"); err != nil {
 		t.Fatalf("erro ao criar novo utilizador: %v", err)
 	}

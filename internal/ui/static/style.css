@@ -488,3 +488,22 @@ form.htmx-request button.btn-launch::after {
     width: 100%;
     margin-top: 0.5rem;
 }
+
+.totp-setup-box {
+    border-top: 1px solid var(--accent-gold);
+    padding-top: 1.25rem;
+}
+
+.qr-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.qr-code-img {
+    border: 3px solid var(--accent-gold);
+    border-radius: 6px;
+    background-color: #ffffff;
+    padding: 0.35rem;
+}
+

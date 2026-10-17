@@ -1,0 +1,51 @@
+<section class="dashboard">
+    <div class="dashboard-header">
+        <h2>A Minha Cabine</h2>
+    </div>
+
+    <div class="catalog-card" style="max-width: 600px;">
+        <h3>Oficial: {{.Username}} <span class="badge-status">{{.Realm}}</span></h3>
+        <p class="hub-desc">
+            Proteja a ponte de comando ativando a Autenticação de Dois Fatores (2FA / TOTP) compatível com Google Authenticator, Authy ou FreeOTP.
+        </p>
+
+        {{if .TOTPEnabled}}
+        <div class="launch-success-box" style="margin-bottom: 1rem;">
+            <span>🔐 2FA já se encontra ativo nesta conta.</span>
+        </div>
+        {{end}}
+
+        <button type="button" class="btn-gold" hx-post="/profile/2fa/generate" hx-target="#2fa-setup">
+            Ativar 2FA
+        </button>
+
+        <div id="2fa-setup" style="margin-top: 1.5rem;"></div>
+    </div>
+</section>
+
+{{define "totp_setup"}}
+<div class="totp-setup-box">
+    {{if .Error}}
+    <div class="alert-box">
+        <p>{{.Error}}</p>
+    </div>
+    {{end}}
+
+    <p class="hub-desc">1. Escaneie o QR Code abaixo na sua aplicação autenticadora ou insira o segredo manualmente:</p>
+    <div class="qr-wrapper">
+        <img src="{{.QRCode}}" alt="QR Code 2FA" class="qr-code-img">
+    </div>
+    <p class="hub-desc">Segredo TOTP: <code>{{.Secret}}</code></p>
+
+    <form hx-post="/profile/2fa/enable" hx-target="#2fa-setup">
+        <input type="hidden" name="secret" value="{{.Secret}}">
+        <div class="form-group">
+            <label for="totp-verify-token">2. Digite o código de 6 dígitos gerado para confirmar:</label>
+            <input type="text" id="totp-verify-token" name="token" class="form-control" placeholder="000000" autocomplete="off" required>
+        </div>
+        <button type="submit" class="btn-gold btn-block">
+            Confirmar e Ativar 2FA
+        </button>
+    </form>
+</div>
+{{end}}

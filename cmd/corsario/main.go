@@ -56,6 +56,18 @@ type UsersData struct {
 	Error string
 }
 
+type ProfileData struct {
+	Username    string
+	Realm       string
+	TOTPEnabled bool
+}
+
+type TOTPSetupData struct {
+	Secret string
+	QRCode template.URL
+	Error  string
+}
+
 type LoginData struct {
 	Error string
 }
@@ -99,6 +111,22 @@ func loadUsersData(errMsg string) UsersData {
 		Users: users,
 		Error: errMsg,
 	}
+}
+
+func currentUserFromRequest(database *sql.DB, r *http.Request) (*db.User, bool) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil || cookie.Value == "" {
+		return nil, false
+	}
+	userID, valid := db.ValidateSession(database, cookie.Value)
+	if !valid {
+		return nil, false
+	}
+	u, err := db.GetUserByID(userID)
+	if err != nil {
+		return nil, false
+	}
+	return u, true
 }
 
 func authMiddleware(database *sql.DB, next http.HandlerFunc) http.HandlerFunc {
@@ -236,6 +264,7 @@ func main() {
 			username := r.FormValue("username")
 			pass := r.FormValue("password")
 			realm := r.FormValue("realm")
+			totpToken := strings.TrimSpace(r.FormValue("totp_token"))
 			if realm == "" {
 				realm = "interno"
 			}
@@ -247,6 +276,16 @@ func main() {
 					Error: "Credenciais inválidas. Verifique seu usuário, senha e realm.",
 				})
 				return
+			}
+
+			if user.TOTPSecret != "" {
+				if totpToken == "" || !auth.ValidateTOTP(totpToken, user.TOTPSecret) {
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					_ = tmpl.ExecuteTemplate(w, "login.html", LoginData{
+						Error: "⚠️ Código 2FA inválido",
+					})
+					return
+				}
 			}
 
 			token, err := auth.GenerateSessionToken()
@@ -407,6 +446,78 @@ func main() {
 
 		w.Header().Set("HX-Trigger", "userListChanged")
 		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Rota GET /profile (A Minha Cabine) protegida pelo middleware de autenticação
+	mux.HandleFunc("GET /profile", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		user, ok := currentUserFromRequest(database, r)
+		if !ok {
+			redirectToLogin(w, r)
+			return
+		}
+		data := ProfileData{
+			Username:    user.Username,
+			Realm:       user.Realm,
+			TOTPEnabled: user.TOTPSecret != "",
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.ExecuteTemplate(w, "profile.html", data); err != nil {
+			http.Error(w, "Erro ao renderizar A Minha Cabine", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota POST /profile/2fa/generate protegida pelo middleware de autenticação
+	mux.HandleFunc("POST /profile/2fa/generate", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		user, ok := currentUserFromRequest(database, r)
+		if !ok {
+			redirectToLogin(w, r)
+			return
+		}
+
+		secret, qrBase64, err := auth.GenerateTOTP(user.Username)
+		if err != nil {
+			http.Error(w, "Erro ao gerar chave TOTP", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		data := TOTPSetupData{
+			Secret: secret,
+			QRCode: template.URL(qrBase64),
+		}
+		if err := tmpl.ExecuteTemplate(w, "totp_setup", data); err != nil {
+			http.Error(w, "Erro ao renderizar configuração 2FA", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota POST /profile/2fa/enable protegida pelo middleware de autenticação
+	mux.HandleFunc("POST /profile/2fa/enable", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		user, ok := currentUserFromRequest(database, r)
+		if !ok {
+			redirectToLogin(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := r.ParseForm(); err != nil {
+			fmt.Fprint(w, `<div class="alert-box">Dados de formulário inválidos.</div>`)
+			return
+		}
+
+		secret := strings.TrimSpace(r.FormValue("secret"))
+		token := strings.TrimSpace(r.FormValue("token"))
+
+		if !auth.ValidateTOTP(token, secret) {
+			fmt.Fprint(w, `<div class="alert-box">⚠️ Código 2FA inválido. Verifique o código na aplicação e tente novamente.</div>`)
+			return
+		}
+
+		if err := db.UpdateUserTOTPSecret(user.ID, secret); err != nil {
+			fmt.Fprint(w, `<div class="alert-box">Erro ao guardar o segredo 2FA no banco de dados.</div>`)
+			return
+		}
+
+		fmt.Fprint(w, `<div class="launch-success-box"><span>🔐 2FA Ativado com sucesso!</span></div>`)
 	}))
 
 	// Rota GET /hub/search protegida pelo middleware de autenticação

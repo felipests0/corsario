@@ -128,6 +128,24 @@ func CountUsers() (int, error) {
 	return count, nil
 }
 
+func UpdateUserTOTPSecret(userID int, secret string) error {
+	query := `UPDATE users SET totp_secret = ? WHERE id = ?;`
+	if _, err := DB.Exec(query, secret, userID); err != nil {
+		return fmt.Errorf("erro ao atualizar segredo TOTP: %w", err)
+	}
+	return nil
+}
+
+func GetUserByID(userID int) (*User, error) {
+	var u User
+	query := `SELECT id, username, password_hash, realm, COALESCE(totp_secret, '') FROM users WHERE id = ?;`
+	err := DB.QueryRow(query, userID).Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Realm, &u.TOTPSecret)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
 func GetUserByUsernameAndRealm(conn *sql.DB, username, realm string) (*User, error) {
 	var u User
 	query := `SELECT id, username, password_hash, realm, COALESCE(totp_secret, '') FROM users WHERE username = ? AND realm = ?;`
