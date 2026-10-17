@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -24,11 +25,23 @@ type ContainerAPI interface {
 	ContainerStop(ctx context.Context, containerID string, options container.StopOptions) error
 	ContainerRestart(ctx context.Context, containerID string, options container.StopOptions) error
 	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
+	ContainerLogs(ctx context.Context, container string, options container.LogsOptions) (io.ReadCloser, error)
 	Close() error
 }
 
 var newContainerClient = func() (ContainerAPI, error) {
 	return NewClient()
+}
+
+type logStreamCloser struct {
+	io.ReadCloser
+	cli ContainerAPI
+}
+
+func (l *logStreamCloser) Close() error {
+	err := l.ReadCloser.Close()
+	_ = l.cli.Close()
+	return err
 }
 
 func NewClient() (*client.Client, error) {
@@ -147,4 +160,30 @@ func RemoveContainer(id string) error {
 		return fmt.Errorf("erro ao remover container %s: %w", id, err)
 	}
 	return nil
+}
+
+func ContainerLogs(id string) (io.ReadCloser, error) {
+	cli, err := newContainerClient()
+	if err != nil {
+		return nil, err
+	}
+
+	opts := container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+		Timestamps: true,
+		Tail:       "50",
+	}
+
+	stream, err := cli.ContainerLogs(context.Background(), id, opts)
+	if err != nil {
+		_ = cli.Close()
+		return nil, fmt.Errorf("erro ao obter logs do container %s: %w", id, err)
+	}
+
+	return &logStreamCloser{
+		ReadCloser: stream,
+		cli:        cli,
+	}, nil
 }

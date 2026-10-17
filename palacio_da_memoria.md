@@ -22,3 +22,12 @@
 ## 3. Qualidade e Testes
 - **Testes Unitários:** Todas as regras de negócio do backend, manipulação de banco de dados e integrações (como o Docker SDK) devem ser cobertas por testes unitários usando o pacote nativo `testing` do Go.
 - **Banco de Dados em Testes:** Testes que envolvem o SQLite devem utilizar bancos em memória (`file::memory:?cache=shared`) para não poluir o banco de desenvolvimento.
+
+## 4. Progresso Atual e Funcionalidades Implementadas
+- Estrutura base com Go e `embed.FS` funcional.
+- UI com HTMX e paleta de cores temática.
+- Banco de dados SQLite operando em modo WAL (`internal/db`).
+- Autenticação local, hash de senhas e middleware de controlo de sessões via cookies (`internal/auth`).
+- Criação de utilizador admin via CLI (flags).
+- Ligação direta ao `/var/run/docker.sock` via Docker SDK.
+- Ações de ciclo de vida de containers operacionais (Start, Stop, Restart, Remove).

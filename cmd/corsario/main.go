@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"embed"
 	"flag"
 	"fmt"
+	"html"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"corsario/internal/auth"
@@ -33,6 +36,10 @@ type DashboardData struct {
 
 type LoginData struct {
 	Error string
+}
+
+type LogsBoxData struct {
+	ID string
 }
 
 func loadDashboardData() DashboardData {
@@ -87,6 +94,14 @@ func handleContainerAction(action func(id string) error) http.HandlerFunc {
 		w.Header().Set("HX-Trigger", "containerListChanged")
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func sanitizeDockerLogLine(line string) string {
+	// Remove cabeçalho de multiplexação de 8 bytes do Docker (se presente)
+	if len(line) >= 8 && (line[0] == 1 || line[0] == 2) && line[1] == 0 && line[2] == 0 && line[3] == 0 {
+		line = line[8:]
+	}
+	return strings.TrimRight(line, "\r\n")
 }
 
 func main() {
@@ -227,6 +242,62 @@ func main() {
 	mux.HandleFunc("POST /containers/stop/{id}", authMiddleware(database, handleContainerAction(docker.StopContainer)))
 	mux.HandleFunc("POST /containers/restart/{id}", authMiddleware(database, handleContainerAction(docker.RestartContainer)))
 	mux.HandleFunc("DELETE /containers/remove/{id}", authMiddleware(database, handleContainerAction(docker.RemoveContainer)))
+
+	// Rota GET /containers/logs-box/{id} para exibir o painel SSE de logs do container
+	mux.HandleFunc("GET /containers/logs-box/{id}", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if id == "" {
+			http.Error(w, "ID do container ausente", http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.ExecuteTemplate(w, "logs_box", LogsBoxData{ID: id}); err != nil {
+			http.Error(w, "Erro ao renderizar caixa de logs", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota SSE GET /containers/logs/{id} para streaming de logs em tempo real
+	mux.HandleFunc("GET /containers/logs/{id}", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if id == "" {
+			http.Error(w, "ID do container ausente", http.StatusBadRequest)
+			return
+		}
+
+		f, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "Streaming SSE não suportado", http.StatusInternalServerError)
+			return
+		}
+
+		logStream, err := docker.ContainerLogs(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer logStream.Close()
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+
+		go func() {
+			<-r.Context().Done()
+			_ = logStream.Close()
+		}()
+
+		scanner := bufio.NewScanner(logStream)
+		for scanner.Scan() {
+			select {
+			case <-r.Context().Done():
+				return
+			default:
+				linha := fmt.Sprintf("<span class=\"log-line\">%s</span>", html.EscapeString(sanitizeDockerLogLine(scanner.Text())))
+				fmt.Fprintf(w, "data: %s\n\n", linha)
+				f.Flush()
+			}
+		}
+	}))
 
 	// Rota /ping para HTMX
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {

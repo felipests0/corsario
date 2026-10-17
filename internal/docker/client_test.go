@@ -2,6 +2,8 @@ package docker
 
 import (
 	"context"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
@@ -13,6 +15,8 @@ type mockContainerClient struct {
 	restartedID string
 	removedID   string
 	removeForce bool
+	logsID      string
+	logsOptions container.LogsOptions
 }
 
 func (m *mockContainerClient) ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error) {
@@ -38,6 +42,12 @@ func (m *mockContainerClient) ContainerRemove(ctx context.Context, containerID s
 	m.removedID = containerID
 	m.removeForce = options.Force
 	return nil
+}
+
+func (m *mockContainerClient) ContainerLogs(ctx context.Context, containerID string, options container.LogsOptions) (io.ReadCloser, error) {
+	m.logsID = containerID
+	m.logsOptions = options
+	return io.NopCloser(strings.NewReader("2026-10-17T01:38:00Z log de teste\n")), nil
 }
 
 func (m *mockContainerClient) Close() error {
@@ -94,5 +104,18 @@ func TestContainerLifecycleActionsWithMock(t *testing.T) {
 	}
 	if !mockCli.removeForce {
 		t.Error("esperava RemoveOptions{Force: true} em RemoveContainer")
+	}
+
+	rc, err := ContainerLogs("c-logs-123")
+	if err != nil {
+		t.Fatalf("erro inesperado em ContainerLogs: %v", err)
+	}
+	defer rc.Close()
+
+	if mockCli.logsID != "c-logs-123" {
+		t.Errorf("esperava logsID 'c-logs-123', obteve '%s'", mockCli.logsID)
+	}
+	if !mockCli.logsOptions.ShowStdout || !mockCli.logsOptions.ShowStderr || !mockCli.logsOptions.Follow || !mockCli.logsOptions.Timestamps || mockCli.logsOptions.Tail != "50" {
+		t.Errorf("opções de logs incorretas: %+v", mockCli.logsOptions)
 	}
 }
