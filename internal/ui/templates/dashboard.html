@@ -1,0 +1,53 @@
+{{define "dashboard"}}
+<section class="dashboard">
+    <div class="dashboard-header">
+        <h2>Frota de Containers</h2>
+        <button class="btn-gold" hx-get="/containers" hx-target="#tabela-containers">
+            Atualizar
+        </button>
+    </div>
+
+    <div id="tabela-containers">
+        {{template "containers_table" .}}
+    </div>
+</section>
+{{end}}
+
+{{define "containers_table"}}
+{{if .Error}}
+<div class="alert-box">
+    <p>{{.Error}}</p>
+</div>
+{{else}}
+<table class="fleet-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Imagem</th>
+            <th>Status</th>
+            <th>Portas</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Containers}}
+        <tr>
+            <td><code>{{.ID}}</code></td>
+            <td>{{.Name}}</td>
+            <td>{{.Image}}</td>
+            <td>
+                <span class="badge-status {{if ne .State "running"}}badge-stopped{{end}}">
+                    {{.Status}}
+                </span>
+            </td>
+            <td>{{.Ports}}</td>
+        </tr>
+        {{else}}
+        <tr>
+            <td colspan="5">Nenhum container encontrado no convés.</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}
+{{end}}

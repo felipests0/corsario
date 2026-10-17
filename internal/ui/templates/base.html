@@ -10,11 +10,12 @@
 <body>
     <header>
         <h1>Corsário</h1>
+        <nav class="nav-tabs">
+            <a href="/" class="nav-tab">Dashboard</a>
+        </nav>
     </header>
     <main class="container">
-        <button class="btn-gold" hx-get="/ping" hx-swap="outerHTML">
-            Testar Sinal (Ping)
-        </button>
+        {{template "dashboard" .}}
     </main>
 </body>
 </html>

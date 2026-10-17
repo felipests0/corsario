@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"corsario/internal/db"
+	"corsario/internal/docker"
 	"corsario/internal/ui"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -18,6 +19,23 @@ var (
 	templatesFS embed.FS = ui.TemplatesFS
 )
 
+type DashboardData struct {
+	Containers []docker.ContainerInfo
+	Error      string
+}
+
+func loadDashboardData() DashboardData {
+	containers, err := docker.ListContainers()
+	if err != nil {
+		return DashboardData{
+			Error: fmt.Sprintf("Erro ao consultar o Docker: %v", err),
+		}
+	}
+	return DashboardData{
+		Containers: containers,
+	}
+}
+
 func main() {
 	database, err := db.InitDB("corsario.db")
 	if err != nil {
@@ -25,7 +43,7 @@ func main() {
 	}
 	defer database.Close()
 
-	tmpl, err := template.ParseFS(templatesFS, "templates/base.html")
+	tmpl, err := template.ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
 		log.Fatalf("Erro ao carregar templates: %v", err)
 	}
@@ -35,14 +53,28 @@ func main() {
 	// Servir arquivos estáticos em /static/
 	mux.Handle("/static/", http.FileServer(http.FS(staticFS)))
 
-	// Rota principal /
+	// Rota principal / com o dashboard como aba principal
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
-		if err := tmpl.ExecuteTemplate(w, "base.html", nil); err != nil {
+		data := loadDashboardData()
+		if err := tmpl.ExecuteTemplate(w, "base.html", data); err != nil {
 			http.Error(w, "Erro ao renderizar página", http.StatusInternalServerError)
+		}
+	})
+
+	// Rota GET /containers que retorna o fragmento HTML da tabela para o HTMX
+	mux.HandleFunc("/containers", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		data := loadDashboardData()
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.ExecuteTemplate(w, "containers_table", data); err != nil {
+			http.Error(w, "Erro ao renderizar tabela de containers", http.StatusInternalServerError)
 		}
 	})
 
