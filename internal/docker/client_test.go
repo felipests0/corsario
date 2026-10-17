@@ -7,16 +7,19 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 )
 
 type mockContainerClient struct {
-	startedID   string
-	stoppedID   string
-	restartedID string
-	removedID   string
-	removeForce bool
-	logsID      string
-	logsOptions container.LogsOptions
+	startedID        string
+	stoppedID        string
+	restartedID      string
+	removedID        string
+	removeForce      bool
+	logsID           string
+	logsOptions      container.LogsOptions
+	removedImageID   string
+	removeImageForce bool
 }
 
 func (m *mockContainerClient) ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error) {
@@ -48,6 +51,22 @@ func (m *mockContainerClient) ContainerLogs(ctx context.Context, containerID str
 	m.logsID = containerID
 	m.logsOptions = options
 	return io.NopCloser(strings.NewReader("2026-10-17T01:38:00Z log de teste\n")), nil
+}
+
+func (m *mockContainerClient) ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error) {
+	return []image.Summary{
+		{
+			ID:       "sha256:1234567890abcdef1234567890abcdef",
+			RepoTags: []string{"nginx:latest"},
+			Size:     142606336,
+		},
+	}, nil
+}
+
+func (m *mockContainerClient) ImageRemove(ctx context.Context, imageID string, options image.RemoveOptions) ([]image.DeleteResponse, error) {
+	m.removedImageID = imageID
+	m.removeImageForce = options.Force
+	return nil, nil
 }
 
 func (m *mockContainerClient) Close() error {
@@ -117,5 +136,34 @@ func TestContainerLifecycleActionsWithMock(t *testing.T) {
 	}
 	if !mockCli.logsOptions.ShowStdout || !mockCli.logsOptions.ShowStderr || !mockCli.logsOptions.Follow || !mockCli.logsOptions.Timestamps || mockCli.logsOptions.Tail != "50" {
 		t.Errorf("opções de logs incorretas: %+v", mockCli.logsOptions)
+	}
+}
+
+func TestImageActionsWithMock(t *testing.T) {
+	mockCli := &mockContainerClient{}
+	origFactory := newContainerClient
+	newContainerClient = func() (ContainerAPI, error) {
+		return mockCli, nil
+	}
+	defer func() {
+		newContainerClient = origFactory
+	}()
+
+	imgs, err := ListImages()
+	if err != nil {
+		t.Fatalf("erro inesperado em ListImages: %v", err)
+	}
+	if len(imgs) != 1 || imgs[0].ID != "1234567890ab" {
+		t.Errorf("esperava 1 imagem com ID curto '1234567890ab', obteve %+v", imgs)
+	}
+
+	if err := RemoveImage("img-remove-123"); err != nil {
+		t.Fatalf("erro inesperado em RemoveImage: %v", err)
+	}
+	if mockCli.removedImageID != "img-remove-123" {
+		t.Errorf("esperava removedImageID 'img-remove-123', obteve '%s'", mockCli.removedImageID)
+	}
+	if !mockCli.removeImageForce {
+		t.Error("esperava image.RemoveOptions{Force: true} em RemoveImage")
 	}
 }

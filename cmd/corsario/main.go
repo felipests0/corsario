@@ -19,6 +19,7 @@ import (
 	"corsario/internal/docker"
 	"corsario/internal/ui"
 
+	"github.com/docker/docker/api/types/image"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -32,6 +33,11 @@ const sessionCookieName = "corsario_session"
 type DashboardData struct {
 	Containers []docker.ContainerInfo
 	Error      string
+}
+
+type ImagesData struct {
+	Images []image.Summary
+	Error  string
 }
 
 type LoginData struct {
@@ -51,6 +57,18 @@ func loadDashboardData() DashboardData {
 	}
 	return DashboardData{
 		Containers: containers,
+	}
+}
+
+func loadImagesData() ImagesData {
+	images, err := docker.ListImages()
+	if err != nil {
+		return ImagesData{
+			Error: fmt.Sprintf("Erro ao listar imagens do Docker: %v", err),
+		}
+	}
+	return ImagesData{
+		Images: images,
 	}
 }
 
@@ -130,7 +148,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	tmpl, err := template.ParseFS(templatesFS, "templates/*.html")
+	funcMap := template.FuncMap{
+		"sizeMB": func(bytes int64) string {
+			return fmt.Sprintf("%.2f MB", float64(bytes)/(1024.0*1024.0))
+		},
+		"joinTags": func(tags []string) string {
+			if len(tags) == 0 {
+				return "<none>:<none>"
+			}
+			return strings.Join(tags, ", ")
+		},
+	}
+
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
 		log.Fatalf("Erro ao carregar templates: %v", err)
 	}
@@ -232,7 +262,12 @@ func main() {
 		}
 		data := loadDashboardData()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if err := tmpl.ExecuteTemplate(w, "containers_table", data); err != nil {
+		target := r.Header.Get("HX-Target")
+		templateName := "containers_table"
+		if target == "conteudo-principal" {
+			templateName = "dashboard"
+		}
+		if err := tmpl.ExecuteTemplate(w, templateName, data); err != nil {
 			http.Error(w, "Erro ao renderizar tabela de containers", http.StatusInternalServerError)
 		}
 	}))
@@ -242,6 +277,30 @@ func main() {
 	mux.HandleFunc("POST /containers/stop/{id}", authMiddleware(database, handleContainerAction(docker.StopContainer)))
 	mux.HandleFunc("POST /containers/restart/{id}", authMiddleware(database, handleContainerAction(docker.RestartContainer)))
 	mux.HandleFunc("DELETE /containers/remove/{id}", authMiddleware(database, handleContainerAction(docker.RemoveContainer)))
+
+	// Rota GET /images protegida pelo middleware de autenticação
+	mux.HandleFunc("GET /images", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		data := loadImagesData()
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.ExecuteTemplate(w, "images.html", data); err != nil {
+			http.Error(w, "Erro ao renderizar lista de imagens", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota DELETE /images/remove/{id} protegida pelo middleware de autenticação
+	mux.HandleFunc("DELETE /images/remove/{id}", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if id == "" {
+			http.Error(w, "ID da imagem ausente", http.StatusBadRequest)
+			return
+		}
+		if err := docker.RemoveImage(id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("HX-Trigger", "imageListChanged")
+		w.WriteHeader(http.StatusOK)
+	}))
 
 	// Rota GET /containers/logs-box/{id} para exibir o painel SSE de logs do container
 	mux.HandleFunc("GET /containers/logs-box/{id}", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {

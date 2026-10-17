@@ -1,0 +1,43 @@
+<section class="dashboard" hx-get="/images" hx-trigger="imageListChanged from:body" hx-target="#conteudo-principal">
+    <div class="dashboard-header">
+        <h2>Arsenal de Imagens</h2>
+        <button class="btn-gold" hx-get="/images" hx-target="#conteudo-principal">
+            Atualizar
+        </button>
+    </div>
+
+    {{if .Error}}
+    <div class="alert-box">
+        <p>{{.Error}}</p>
+    </div>
+    {{else}}
+    <table class="fleet-table" hx-get="/images" hx-trigger="imageListChanged from:body" hx-target="#conteudo-principal">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Repositório/Tag</th>
+                <th>Tamanho (MB)</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Images}}
+            <tr>
+                <td><code>{{.ID}}</code></td>
+                <td>{{joinTags .RepoTags}}</td>
+                <td>{{sizeMB .Size}}</td>
+                <td>
+                    <button class="btn-action btn-wine" hx-delete="/images/remove/{{.ID}}" hx-confirm="Tem a certeza que deseja jogar esta imagem ao mar?" hx-swap="none">
+                        Descartar
+                    </button>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="4">Nenhuma imagem encontrada no arsenal.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{end}}
+</section>

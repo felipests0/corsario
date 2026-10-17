@@ -12,10 +12,15 @@
     <header>
         <h1>Corsário</h1>
         <nav class="nav-tabs">
-            <a href="/" class="nav-tab">Dashboard</a>
+            <button type="button" class="nav-tab" hx-get="/containers" hx-target="#conteudo-principal">
+                Frota
+            </button>
+            <button type="button" class="nav-tab" hx-get="/images" hx-target="#conteudo-principal">
+                Arsenal
+            </button>
         </nav>
     </header>
-    <main class="container">
+    <main id="conteudo-principal" class="container">
         {{template "dashboard" .}}
     </main>
 </body>

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
 
@@ -26,6 +27,8 @@ type ContainerAPI interface {
 	ContainerRestart(ctx context.Context, containerID string, options container.StopOptions) error
 	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
 	ContainerLogs(ctx context.Context, container string, options container.LogsOptions) (io.ReadCloser, error)
+	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
+	ImageRemove(ctx context.Context, imageID string, options image.RemoveOptions) ([]image.DeleteResponse, error)
 	Close() error
 }
 
@@ -186,4 +189,43 @@ func ContainerLogs(id string) (io.ReadCloser, error) {
 		ReadCloser: stream,
 		cli:        cli,
 	}, nil
+}
+
+func ListImages() ([]image.Summary, error) {
+	cli, err := newContainerClient()
+	if err != nil {
+		return nil, err
+	}
+	defer cli.Close()
+
+	images, err := cli.ImageList(context.Background(), image.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar imagens: %w", err)
+	}
+
+	for i := range images {
+		shortID := strings.TrimPrefix(images[i].ID, "sha256:")
+		if len(shortID) > 12 {
+			shortID = shortID[:12]
+		}
+		images[i].ID = shortID
+		if len(images[i].RepoTags) == 0 {
+			images[i].RepoTags = []string{"<none>:<none>"}
+		}
+	}
+
+	return images, nil
+}
+
+func RemoveImage(id string) error {
+	cli, err := newContainerClient()
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	if _, err := cli.ImageRemove(context.Background(), id, image.RemoveOptions{Force: true, PruneChildren: true}); err != nil {
+		return fmt.Errorf("erro ao remover imagem %s: %w", id, err)
+	}
+	return nil
 }
