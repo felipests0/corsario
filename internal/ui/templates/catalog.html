@@ -1,4 +1,14 @@
 <section class="dashboard">
+    <div class="hub-search-section">
+        <div class="dashboard-header">
+            <h2>Explorar o Oceano (Docker Hub)</h2>
+        </div>
+        <div class="form-group">
+            <input type="text" name="q" class="form-control" placeholder="Pesquisar imagens no Docker Hub (ex: traefik, grafana, alpine)..." hx-get="/hub/search" hx-trigger="keyup changed delay:500ms" hx-target="#hub-results">
+        </div>
+        <div id="hub-results"></div>
+    </div>
+
     <div class="dashboard-header">
         <h2>Estaleiro de Aplicações</h2>
     </div>
@@ -6,13 +16,21 @@
     <div id="estaleiro-feedback"></div>
 
     <div class="catalog-grid">
-        {{range .Templates}}
+        {{range $idx, $tmpl := .Templates}}
         <div class="catalog-card">
-            <h3>{{.Name}}</h3>
+            <h3>{{$tmpl.Name}}</h3>
             <form hx-post="/containers/create" hx-target="#estaleiro-feedback">
                 <div class="form-group">
-                    <label>Imagem Docker</label>
-                    <input type="text" name="image" value="{{.Image}}" class="form-control" readonly>
+                    <label>Imagem Docker e Versão (Tag)</label>
+                    <div class="image-version-row">
+                        <input type="text" name="image" value="{{baseImage $tmpl.Image}}" class="form-control" readonly>
+                        <select name="tag" id="tmpl-tags-{{$idx}}" class="form-control">
+                            <option value="{{defaultTag $tmpl.Image}}">{{defaultTag $tmpl.Image}}</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn-action btn-steel btn-load-tags" hx-get="/hub/tags?image={{baseImage $tmpl.Image}}" hx-target="#tmpl-tags-{{$idx}}" hx-swap="innerHTML">
+                        Carregar Versões
+                    </button>
                 </div>
 
                 <div class="form-group">
@@ -22,10 +40,10 @@
 
                 <div class="form-group">
                     <label>Mapeamento de Portas (Host:Container)</label>
-                    <input type="text" name="port" value="{{.DefaultPort}}" class="form-control" required>
+                    <input type="text" name="port" value="{{$tmpl.DefaultPort}}" class="form-control">
                 </div>
 
-                {{range .RequiredEnvs}}
+                {{range $tmpl.RequiredEnvs}}
                 {{$key := envKey .}}
                 <div class="form-group">
                     <label>Variável: {{$key}}</label>
@@ -41,3 +59,51 @@
         {{end}}
     </div>
 </section>
+
+{{define "hub_search_results"}}
+{{if .Error}}
+<div class="alert-box">
+    <p>{{.Error}}</p>
+</div>
+{{else if .Results}}
+<div class="catalog-grid hub-results-grid">
+    {{range $idx, $res := .Results}}
+    <div class="catalog-card">
+        <div class="hub-card-header">
+            <h3>{{$res.Name}}</h3>
+            <span class="badge-status">★ {{$res.StarCount}}</span>
+        </div>
+        <p class="hub-desc">{{$res.Description}}</p>
+        <form hx-post="/containers/create" hx-target="#estaleiro-feedback">
+            <div class="form-group">
+                <label>Imagem Docker e Versão (Tag)</label>
+                <div class="image-version-row">
+                    <input type="text" name="image" value="{{$res.Name}}" class="form-control" readonly>
+                    <select name="tag" id="hub-tags-{{$idx}}" class="form-control">
+                        <option value="latest">latest</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-action btn-steel btn-load-tags" hx-get="/hub/tags?image={{$res.Name}}" hx-target="#hub-tags-{{$idx}}" hx-swap="innerHTML">
+                    Carregar Versões
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label>Nome do Container</label>
+                <input type="text" name="name" placeholder="ex: meu-container" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label>Mapeamento de Portas (Host:Container, opcional)</label>
+                <input type="text" name="port" placeholder="ex: 8080:80" class="form-control">
+            </div>
+
+            <button type="submit" class="btn-gold btn-block">
+                Lançar ao Mar
+            </button>
+        </form>
+    </div>
+    {{end}}
+</div>
+{{end}}
+{{end}}

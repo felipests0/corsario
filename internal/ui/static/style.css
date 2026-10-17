@@ -189,6 +189,46 @@ header h1 {
     margin-bottom: 1rem;
 }
 
+.hub-search-section {
+    margin-bottom: 2.25rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--accent-gold);
+}
+
+.hub-results-grid {
+    margin-top: 1rem;
+}
+
+.hub-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.hub-card-header h3 {
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+.hub-desc {
+    font-size: 0.88rem;
+    color: var(--text-ivory);
+    opacity: 0.9;
+    margin-bottom: 1rem;
+}
+
+.image-version-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.btn-load-tags {
+    margin-top: 0.45rem;
+}
+
 .catalog-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

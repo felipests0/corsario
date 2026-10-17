@@ -33,3 +33,4 @@
 - Ações de ciclo de vida de containers operacionais (Start, Stop, Restart, Remove).
 - Visualização de logs de containers em tempo real utilizando Server-Sent Events (SSE) e HTMX.
 - Gestão do Arsenal (Listagem e exclusão forçada de imagens Docker).
+- Estaleiro de Aplicações: Catálogo de templates pré-configurados e lançamento rápido de containers via formulários dinâmicos.

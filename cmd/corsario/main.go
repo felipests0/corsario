@@ -45,6 +45,11 @@ type CatalogData struct {
 	Templates []catalog.AppTemplate
 }
 
+type HubSearchData struct {
+	Results []docker.HubSearchResult
+	Error   string
+}
+
 type LoginData struct {
 	Error string
 }
@@ -127,6 +132,13 @@ func sanitizeDockerLogLine(line string) string {
 	return strings.TrimRight(line, "\r\n")
 }
 
+func splitImageAndTag(img string) (string, string) {
+	if idx := strings.Index(img, ":"); idx != -1 {
+		return img[:idx], img[idx+1:]
+	}
+	return img, "latest"
+}
+
 func main() {
 	createAdmin := flag.String("create-admin", "", "Username do administrador inicial a ser criado")
 	password := flag.String("password", "", "Senha do administrador inicial")
@@ -165,6 +177,14 @@ func main() {
 		},
 		"envKey": func(env string) string {
 			return strings.TrimSuffix(env, "=")
+		},
+		"baseImage": func(img string) string {
+			base, _ := splitImageAndTag(img)
+			return base
+		},
+		"defaultTag": func(img string) string {
+			_, tag := splitImageAndTag(img)
+			return tag
 		},
 	}
 
@@ -291,6 +311,39 @@ func main() {
 		}
 	}))
 
+	// Rota GET /hub/search protegida pelo middleware de autenticação
+	mux.HandleFunc("GET /hub/search", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if q == "" {
+			return
+		}
+		results, err := docker.SearchHub(q)
+		data := HubSearchData{Results: results}
+		if err != nil {
+			data.Error = fmt.Sprintf("Erro na busca do Docker Hub: %v", err)
+		}
+		if err := tmpl.ExecuteTemplate(w, "hub_search_results", data); err != nil {
+			http.Error(w, "Erro ao renderizar resultados do Docker Hub", http.StatusInternalServerError)
+		}
+	}))
+
+	// Rota GET /hub/tags protegida pelo middleware de autenticação
+	mux.HandleFunc("GET /hub/tags", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
+		img := strings.TrimSpace(r.URL.Query().Get("image"))
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		tags, err := docker.GetImageTags(img)
+		if err != nil || len(tags) == 0 {
+			_, defaultT := splitImageAndTag(img)
+			fmt.Fprintf(w, `<option value="%s">%s</option>`, html.EscapeString(defaultT), html.EscapeString(defaultT))
+			return
+		}
+		for _, tag := range tags {
+			escaped := html.EscapeString(tag)
+			fmt.Fprintf(w, `<option value="%s">%s</option>`, escaped, escaped)
+		}
+	}))
+
 	// Rota POST /containers/create protegida pelo middleware de autenticação
 	mux.HandleFunc("POST /containers/create", authMiddleware(database, func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -300,8 +353,15 @@ func main() {
 		}
 
 		name := r.FormValue("name")
-		img := r.FormValue("image")
+		img := strings.TrimSpace(r.FormValue("image"))
+		tag := strings.TrimSpace(r.FormValue("tag"))
 		port := r.FormValue("port")
+
+		baseImg, defaultT := splitImageAndTag(img)
+		if tag == "" {
+			tag = defaultT
+		}
+		fullImage := fmt.Sprintf("%s:%s", baseImg, tag)
 
 		var envs []string
 		for k, vals := range r.PostForm {
@@ -311,7 +371,7 @@ func main() {
 			}
 		}
 
-		if err := docker.CreateAndStartContainer(name, img, port, envs); err != nil {
+		if err := docker.CreateAndStartContainer(name, fullImage, port, envs); err != nil {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			fmt.Fprintf(w, `<div class="alert-box">Erro ao lançar container: %s</div>`, html.EscapeString(err.Error()))
 			return
