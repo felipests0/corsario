@@ -40,25 +40,6 @@
 
 ---
 
-## ⚡ Início Rápido (Instalação Rápida)
-
-Em qualquer servidor Linux com Docker e `systemd`, execute o comando de linha única abaixo como `root` (ou via `sudo`):
-
-```bash
-curl -sSL https://raw.githubusercontent.com/felipests0/corsario/main/install.sh | sudo bash
-```
-
-Após a instalação, crie o seu primeiro usuário Capitão (administrador):
-
-```bash
-sudo /usr/local/bin/corsario -create-admin capitao -password "SuaSenhaForteAqui"
-```
-
-Em seguida, acesse o painel no navegador através da porta `9443`:
-- `http://<IP-DO-SERVIDOR>:9443` (ou `https://<IP-DO-SERVIDOR>:9443`)
-
----
-
 ## 🛠️ Instalação Manual / Desenvolvimento
 
 ### Pré-requisitos
